@@ -333,7 +333,7 @@ def make_data(file_list,model,src):
             x = preprocess_input(x)
 
 
-            img_list.append(x)
+          img_list.append(x)
           #print ('img_list=', len(img_list))
           testing_data = np.array(img_list)
 
@@ -421,8 +421,17 @@ model_2 = build_model_2()
 model_2.compile(optimizer='adam', loss='categorical_crossentropy',metrics=['accuracy'])
 
 
-def make_data(file_list,model,src):
 
+
+
+'''
+make stage 2 train data
+'''
+
+
+
+
+def make_data(file_list,model,src):
 
     '''
     first make bacth, then make data
@@ -434,30 +443,49 @@ def make_data(file_list,model,src):
 
 
 
-    s= time.time()
-    final_array = []
+    '''
+    make data
+    '''
+
+    s= time.time()  # count timing
+    final_array = []  # the target array of trainging data
     for j,l in enumerate(final_list):
           img_list=[]
           for i,img in enumerate(l):
-              img = load_img(src+img)
-
-              img = img.resize((2560//4,1920//4))
-
-              x = img_to_array(img)
-              x = preprocess_input(x)
-              if i  == 0 :
 
 
-                print (x.shape)
-              #x = cv2.cvtColor(y, cv2.COLOR_BGR2RGB)
-              #x = x/127.5 -1.
-              img_list.append(x)
+
+            img = load_img(src+img)
+
+            if i == 0:
+                print (img.size)
+            '''
+            in stage 1, no need to resize a smaller one.
+            img = img.resize((2560//4,1920//4))
+
+            '''
+
+            x = img_to_array(img)
+
+
+
+            my_filter = (x.max(axis=2) - x.min(axis=2)) < 50  # get mask
+
+            for k in range(3):
+                x[:,:,k] *= my_filter  # mask out the unnecessary part
+
+
+            x = preprocess_input(x)
+
+
+          img_list.append(x)
           #print ('img_list=', len(img_list))
           testing_data = np.array(img_list)
 
-          #print ('testing_data_shape', testing_data.shape)
-          #train_data =  train_data[:,:,:,np.newaxis]
-          #print (testing_data.shape)
+
+          '''
+          make prediction, result will be (batch_szie, 1280)
+          '''
           pred_temp = model.predict(testing_data)
 
           print('batch = ', j, 'stage 1 completed', 'shape=', pred_temp.shape)
@@ -467,18 +495,17 @@ def make_data(file_list,model,src):
           e = time.time()
           print ('batch',j,'time=', round(e -s ,4))
 
-          final_array.append(pred_temp)
+          final_array.append(pred_temp) # append first batch result
           print ('afterbatch',j,'length=', len(final_array))
 
+    '''
+    convert the final_array list into numpy array and save
+    Stage 1 train data done
+    '''
     final_array = np.concatenate(final_array)
 
     return final_array
 
-
-
-'''
-make stage 2 train data
-'''
 
 
 
